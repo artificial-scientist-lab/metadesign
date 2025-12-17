@@ -201,6 +201,32 @@ fidelity = 0.4999999999999999
 (The model created a code for the 2d GHZ state class, which produces the correct state for ```N=0,1,2```, but it does not produce the correct states for ```N=3,4```. The sampling is probabilistic, so it can be run multiple times until the correct code is found.)
 
 ---
+
+## Average fidelities when sampling on validation data
+
+A more interpretable measure of training progress is to compare the states resulting from the generated codes with the states resulting from the actual target code from the training/validation data.
+
+We compute the fidelity (0 - no overlap between target and pred., 1 - perfect overlap between target and pred.) of the states for `N = 0, 1, 2, 3, 4` and compute the mean (and SEM) over the validation data.
+
+Instead of measuring the similarity between sequence with CE (very different codes can produce the same states), we directly evaluate the resulting states.
+
+
+Fidelities for Main model - trained from scratch:
+
+```
+[0.877±0.002, 0.661±0.003, 0.402±0.003, 0.112±0.002, 0.112±0.002]
+```
+
+
+Fidelities for fine-tuned Llama3 8B model:
+
+```
+[0.950±0.004, 0.584±0.008, 0.316±0.008, 0.008±0.002, 0.000±0.0]
+```
+
+
+
+---
 For sampling the quantum circuit result, run this:
 ```bash
 python sample_circuit.py
