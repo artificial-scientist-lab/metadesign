@@ -1,497 +1,253 @@
+# Meta-designing quantum experiments with language models
+**Sören Arlt, Haonan Duan, Felix Li, Sang Michael Xie, Yuhuai Wu, Mario Krenn**
 
-# Meta-Designing Quantum Experiments with Sequence-to-Sequence Transformers
-*Sören Arlt, Haonan Duan, Felix Li, Sang Michael Xie, Yuhuai Wu, Mario Krenn*
+This repository implements a sequence-to-sequence (encoder–decoder) transformer that generates **meta-solutions**—human-readable Python programs that generalize experimental designs across *entire classes* of targets (rather than a single target instance). The implementation is inspired by the minimal and effective NanoGPT training framework, adapted here for sequence-to-sequence code generation.
 
-**[arXiv:2406.02470](https://arxiv.org/abs/2406.02470)**
+---
 
-This repository implements a sequence-to-sequence transformer for generating meta-solutions—Python programs that generalize experimental designs for entire classes of problems. The implementation builds on the simple and effective framework of NanoGPT for transformer training, but is tailored to tasks involving the meta-design of experiments. Specifically, it enables the creation of scalable, interpretable solutions for designing quantum systems and other structured tasks.
+## Paper
+
+**Meta-designing quantum experiments with language models**  
+Sören Arlt, Haonan Duan, Felix Li, Sang Michael Xie, Yuhuai Wu, Mario Krenn  
+*Nature Machine Intelligence* **8**, 148–157 (2026) — **Published: 19 February 2026**  
+DOI: **10.1038/s42256-025-01153-0**
+
+Links:
+- Published version (Nature Machine Intelligence): https://www.nature.com/articles/s42256-025-01153-0
+- arXiv preprint: https://arxiv.org/abs/2406.02470
+
+Artifacts:
+- **Code archive (Zenodo, v1.0):** https://doi.org/10.5281/zenodo.17287889
+- **Model checkpoints + example training data (Zenodo):** https://doi.org/10.5281/zenodo.14899993
+
+---
 
 ## Overview
 
 This project trains a sequence-to-sequence transformer to:
-1. Generate synthetic data based on predefined rules and random program generation.
-2. Train a transformer model to map quantum or structured states to executable Python programs.
-3. Evaluate the model’s ability to extrapolate to unseen tasks by sampling and analyzing generated solutions.
+1. **Generate synthetic training data** from randomized program templates under hard structural constraints.
+2. **Learn the inverse map**: from structured quantum targets (sequence A) → executable Python programs (sequence B).
+3. **Sample and evaluate** many candidate programs, using physics-based simulation to score fidelity to the target class.
 
-This approach enables the discovery of interpretable solutions that generalize across complex problem spaces, offering insights and capabilities beyond conventional optimization methods.
-
----
-
-## Methodology
-
-This repository employs a transformer-based sequence-to-sequence model trained on synthetic datasets of quantum states and Python programs. The transformer captures patterns in the data to generate interpretable solutions that generalize across problem domains. Synthetic data generation is achieved by simulating quantum optics experiments using the `pytheusQ` library for the main task or simulating quantum circuits using the `qiskit` library. Sampling uses probabilistic techniques to generate multiple candidate solutions, which are then evaluated for fidelity to the target quantum states.
+The resulting programs are interpretable and often generalize to larger system sizes than those seen during training.
 
 ---
 
-## Results and Insights
+## Quickstart
 
-This project demonstrates the ability of transformer models to:
-1. Generate human-readable Python code that generalizes across problem domains.
-2. Rediscover known meta-solutions (e.g., GHZ state setups).
-3. Discover new meta-solutions for previously unsolved classes of quantum experiments, such as spin-½ states in photonic systems.
+### Installation
 
-The interpretability of the generated solutions provides human-readable insights into the underlying patterns, enabling scientists to extend these solutions to larger, more complex systems.
-
-
----
-
-## Features
-
-### **Meta-Design of Quantum Experiments**
-This repository focuses on using transformer models for meta-design, enabling the generation of scalable solutions to classes of problems. For example:
-- Generate Python programs for designing experimental setups for quantum states like GHZ and W-states.
-- Extrapolate solutions to larger system sizes using patterns captured during training.
-
-### **Synthetic Data Generation**
-The synthetic data generation pipeline provides a large and diverse set of sequence pairs:
-1. Programs (`sequence B`) generate experimental setups.
-2. Quantum states (`sequence A`) resulting from the setups.
-
-This asymmetric generation process allows training models on challenging mappings from quantum states to Python programs.
-
----
-
-## Repository Structure
-
-### **Data Directories**
-
-#### **`data_main`** (main task)
-Contains scripts and resources for generating and managing synthetic data for experimental setups:
-- `generate_topologies.py`: The first step in the data generation pipeline.
-- `generate_data.py`: The second step in the data generation pipeline.
-- `graphdata.py`: Library for computing quantum states from graph-based representations.
-- `reorganizedata.py`: Utility for restructuring data files into the required format.
-- `shuffledata.py`: Script for randomizing the order of data entries.
-- `tok.json`: Tokenization file for managing input and output sequences.
-- `valpos_res.py`: Collection of valid terms required for code generation.
-
-#### **`data_circuits`** (additional example)
-Synthetic data generation for quantum circuits:
-- `datagenerator.py`: Generates quantum circuit-related data.
-- `src_tok.json`: Tokenized input (source) data for training.
-- `tgt_tok.json`: Tokenized output (target) data for training.
-
----
-
-### **Root Files**
-
-- `config_circuit.py`: Configurations for transformer training on circuit data (additional example).
-- `config_main.py`: Configurations for transformer training on general experimental setup data (main task).
-- `hdf5dataloader.py`: A utility for efficiently loading large datasets in HDF5 format.
-- `helper.py`: Contains helper functions for data manipulation and processing.
-- `sample.py`: Samples Python programs generated by the trained transformer and evaluates their correctness.
-- `seq2seq.py`: Implements the transformer-based sequence-to-sequence model.
-- `train.py`: The main training script for fitting the sequence-to-sequence transformer.
-
----
-
-## Reproducibility / Data
-
-Below are instructions on how to reproduce our work based on the code provided here. We are in the process of uploading data and model checkpoint files to [Zenodo](https://zenodo.org/records/14899993) for additional reproducibility. While these files will provide convenient access to pre-generated data and trained models, all necessary scripts and configurations are already included in this repository to allow complete reproduction of the data and models.
-
----
-
-## System Requirements & Installation
-
-### Software
-
-The time to install all requirements should be less than five minutes.
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/artificial-scientist-lab/metadesign.git
-   cd metadesign
-   ```
-
-2. Install the packages specified by ```requirements.txt```
-    ```bash
-    pip install -r requirements.txt
-    ```
-
----
-
-### Hardware
-* For data generation multiple processes running in parallel on CPUs were used. 
-* For training we used data parallelism on four A100-40GB GPUs, but single GPUs can be also used if gradient accumulation is used to achieve the desired batch size.
-* For sampling we used single consumer grade GPUs. CPUs will be slower, but the models are small enough to sample with reasonable speed
-
----
-## Demo
-
-### **Training**
-
-#### Data
-The data should be generated through the data generation pipeline described below. A subset of the data can be downloaded from [Zenodo](https://zenodo.org/records/14899993). The files should be stored in ```data_main``` and ```data_circuits``` respectively. The h5 files should comply with ```traindata_prefix``` (files should be named ```{traindata_prefix}_{i}``` where ```i``` is an index starting at zero) and ```split_train``` (total number of files the data is split into) given by the respective config files (from ```ckpt_main``` and ```ckpt_circuit```).
-
-#### Run training
-Run the training script with the desired configuration. 
 ```bash
-python train.py --config ckpt_circuit/config.py
-```
-For quantum circuits:
-```bash
-python train.py --config ckpt_circuit/config.py
-```
+git clone https://github.com/artificial-scientist-lab/metadesign.git
+cd metadesign
+pip install -r requirements.txt
+````
 
+### Download checkpoints (recommended)
 
+Download the released checkpoints from the Zenodo record **10.5281/zenodo.14899993** and place them at:
 
----
-### **Sampling**
-After the models are trained or downloaded from [Zenodo](https://zenodo.org/records/14899993), they should be placed in the following locations:
-```
+```text
 ckpt_main/ckpt_main.pt
 ckpt_circuit/ckpt_circuit.pt
 ```
+
+If the downloaded filenames are `ckpt_main.pt` and `ckpt_circuit.pt`, you can do:
+
+```bash
+mkdir -p ckpt_main ckpt_circuit
+mv ckpt_main.pt ckpt_main/ckpt_main.pt
+mv ckpt_circuit.pt ckpt_circuit/ckpt_circuit.pt
+```
+
 ---
-For sampling one of the main results, run this:
+
+## Sampling demos
+
+### Main task (quantum optics / graph-based setups)
+
+Run:
+
 ```bash
 python sample_main.py
 ```
-(This is recommended to be run on a GPU, but will also produce results on a CPU in less than five minutes.)
 
-Setting a different ```mode``` variable in the script, will make predictions for other target state classes.
+Optional CLI flags (see `sample_main.py`):
 
-A possible output would be:
-
+```bash
+python sample_main.py --task_id 0 --temp 0.2 --topp 0.5
 ```
-number of parameters: 132.56M
-mode = ghz
-generating state for 4 vertices
-+1[axbxcxdx]+1[aybycydy]
-generating state for 6 vertices
-+1[axbxcxdxexfx]+1[aybycydyeyfy]
-generating state for 8 vertices
-+1[axbxcxdxexfxgxhx]+1[aybycydyeyfygyhy]
-generating state for 10 vertices
-generating state for 12 vertices
-temp = 0.2
-topp = 0.5
-### Prediction 0 ###
-Code generated by the model
-e(+3+2*N,+1+0*N,1,1,1)
-e(+2+2*N,+0+0*N,1,1,1)
-e(+0+0*N,+3+2*N,0,0,1)
-e(+2+2*N,+1+2*N,0,0,1)
-for ii in range(N):
-    e(+2+0*N+3*ii,+3+0*N+1*ii,1,1,1)
-    e(+1+0*N+2*ii,+2+0*N+2*ii,0,0,1)
 
-N = 0
-[(3, 1, 1, 1, 1), (2, 0, 1, 1, 1), (0, 3, 0, 0, 1), (2, 1, 0, 0, 1)]
-graph generates: +0.7071067811865475[axbxcxdx]+0.7071067811865475[aybycydy]
-fidelity = 1.0
-N = 1
-[(5, 1, 1, 1, 1), (4, 0, 1, 1, 1), (0, 5, 0, 0, 1), (4, 3, 0, 0, 1), (2, 3, 1, 1, 1), (1, 2, 0, 0, 1)]
-graph generates: +0.7071067811865475[axbxcxdxexfx]+0.7071067811865475[aybycydyeyfy]
-fidelity = 1.0
-N = 2
-[(7, 1, 1, 1, 1), (6, 0, 1, 1, 1), (0, 7, 0, 0, 1), (6, 5, 0, 0, 1), (2, 3, 1, 1, 1), (1, 2, 0, 0, 1), (5, 4, 1, 1, 1), (3, 4, 0, 0, 1)]
-graph generates: +0.7071067811865475[axbxcxdxexfxgxhx]+0.7071067811865475[aybycydyeyfygyhy]
-fidelity = 1.0
-N = 3
-[(9, 1, 1, 1, 1), (8, 0, 1, 1, 1), (0, 9, 0, 0, 1), (8, 7, 0, 0, 1), (2, 3, 1, 1, 1), (1, 2, 0, 0, 1), (5, 4, 1, 1, 1), (3, 4, 0, 0, 1), (8, 5, 1, 1, 1), (5, 6, 0, 0, 1)]
-graph generates: +1.0[axbxcxdxexfxgxhxixjx]
-fidelity = 0.4999999999999999
-N = 4
-[(11, 1, 1, 1, 1), (10, 0, 1, 1, 1), (0, 11, 0, 0, 1), (10, 9, 0, 0, 1), (2, 3, 1, 1, 1), (1, 2, 0, 0, 1), (5, 4, 1, 1, 1), (3, 4, 0, 0, 1), (8, 5, 1, 1, 1), (5, 6, 0, 0, 1), (11, 6, 1, 1, 1), (7, 8, 0, 0, 1)]
-graph generates: +1.0[axbxcxdxexfxgxhxixjxkxlx]
-fidelity = 0.4999999999999999
-[ True  True  True False False]
+Notes:
+
+* `task_id` selects a target *state class* (mapped internally to a list of modes in `sample_main.py`).
+* Sampling is probabilistic; running multiple times can yield different candidate meta-solutions.
+
+### Quantum circuits example
+
+Run:
+
+```bash
+python sample_circuit.py
 ```
-(The model created a code for the 2d GHZ state class, which produces the correct state for ```N=0,1,2```, but it does not produce the correct states for ```N=3,4```. The sampling is probabilistic, so it can be run multiple times until the correct code is found.)
+
+This loads `ckpt_circuit/ckpt_circuit.pt`, generates circuit code, and prints the resulting states for several system sizes.
 
 ---
 
-## Average fidelities when sampling on validation data
+## Training
 
-A more interpretable measure of training progress is to compare the states resulting from the generated codes with the states resulting from the actual target code from the training/validation data.
+### Important: config file is a positional argument
 
-We compute the fidelity (0 - no overlap between target and pred., 1 - perfect overlap between target and pred.) of the states for `N = 0, 1, 2, 3, 4` and compute the mean (and SEM) over the validation data.
+`train.py` loads a Python config file via `sys.argv[1]`.
+So you run training like this (no `--config` flag):
 
-Instead of measuring the similarity between sequence with CE (very different codes can produce the same states), we directly evaluate the resulting states.
+#### Main model
 
+```bash
+python train.py ckpt_main/config.py
+```
 
-Fidelities for Main model - trained from scratch:
+#### Circuit model
+
+For the provided circuit config (set up for multi-GPU DDP in our experiments), use `torchrun`, e.g.:
+
+```bash
+torchrun --standalone --nproc_per_node=4 train.py ckpt_circuit/config.py
+```
+
+To train on fewer GPUs / a single GPU:
+
+* either adjust `ckpt_circuit/config.py` accordingly,
+* or create a new config file (recommended) that matches your setup.
+
+---
+
+## Repository structure (high level)
+
+* `ckpt_main/`
+
+  * `config.py` (training config for main task)
+  * place `ckpt_main.pt` here as `ckpt_main/ckpt_main.pt` for sampling
+* `ckpt_circuit/`
+
+  * `config.py` (training config for circuit task)
+  * place `ckpt_circuit.pt` here as `ckpt_circuit/ckpt_circuit.pt` for sampling
+* `data_main/` — data generation + utilities for the main task
+* `data_circuits/` — data generation for the circuits example
+* `seq2seq.py` — encoder–decoder transformer implementation
+* `train.py` — training loop
+* `sample_main.py` — sampling + fidelity evaluation for main task
+* `sample_circuit.py` — sampling + simulation for circuit task
+* `hdf5dataloader.py`, `helper.py` — utilities
+* `requirements.txt`
+
+---
+
+## Reproducibility / data
+
+* **Model checkpoints and example training data** are available on Zenodo:
+  [https://doi.org/10.5281/zenodo.14899993](https://doi.org/10.5281/zenodo.14899993)
+
+* **Archived code (v1.0)** is available on Zenodo:
+  [https://doi.org/10.5281/zenodo.17287889](https://doi.org/10.5281/zenodo.17287889)
+
+This repository also includes the complete code to regenerate synthetic datasets and retrain models.
+(Full-scale reproduction can be computationally expensive; the Zenodo record is meant to provide convenient access to checkpoints and a small example dataset.)
+
+---
+
+## Average fidelities when sampling on validation data (from the original README)
+
+A more interpretable measure of training progress is to compare the states resulting from the generated code with the states resulting from the ground-truth code (from the training/validation data).
+
+We compute the fidelity (0 = no overlap, 1 = perfect overlap) for `N = 0, 1, 2, 3, 4` and average over the validation set.
+
+Main model (trained from scratch):
 
 ```
 [0.877±0.002, 0.661±0.003, 0.402±0.003, 0.112±0.002, 0.112±0.002]
 ```
 
-
-Fidelities for fine-tuned Llama3 8B model:
+Fine-tuned Llama3 8B model:
 
 ```
 [0.950±0.004, 0.584±0.008, 0.316±0.008, 0.008±0.002, 0.000±0.0]
 ```
 
-
-
 ---
-For sampling the quantum circuit result, run this:
-```bash
-python sample_circuit.py
-```
-(The model for the quantum circuit codes is smaller (44M parameters) and will produce results within a few seconds on a CPU.)
 
-The output should be
+## Pseudocode / pipeline details
 
-```
-temp = 0.2
-topp = 0.5
+The original README contained a very detailed walkthrough of the synthetic data generation and topology constraints.
+If you want to keep that level of detail without making the top of the README overwhelming, one option is to put it into a collapsible block:
 
+<details>
+<summary><strong>Click to expand: detailed pseudocode and data-generation pipeline</strong></summary>
 
-### Prediction 0 ###
-Code generated by the model
-qH(0)
-for ii in range(NN):
-    qCNOT(ii,1+ii)
-qZ(0)
-qZ(NN)
+(You can paste the long “Pseudocode” section from the previous README here verbatim, or move it into a separate markdown file under `docs/`.)
 
-Resulting states, computed by simulating the circuits generated by the output code
-state generated for N = 1
-(+1/√2)|XX>+(+1/√2)|YY>
-state generated for N = 2
-(+1/√2)|XXX>+(+1/√2)|YYY>
-state generated for N = 3
-(+1/√2)|XXXX>+(+1/√2)|YYYY>
-state generated for N = 4
-(+1/√2)|XXXXX>+(+1/√2)|YYYYY>
-```
+</details>
 
 ---
 
-# Pseudocode
+## How to cite
 
-## Data generation
-An random sample code from the data looks like this
+If you use this repository, please cite the **Nature Machine Intelligence** paper.
+If you use the released checkpoints and/or want to cite the archived artifacts, you can also cite the Zenodo records.
 
-```
-e(+3+0*N,+0+0*N,2,2,-1)
-e(+3+1*N,+0+1*N,1,2,1)
-e(+3+2*N,+0+0*N,1,1,1)
-e(+2+2*N,+3+2*N,2,1,1)
-e(+1+0*N,+0+2*N,1,1,-1)
-e(+1+0*N,+2+2*N,2,1,-1)
-for ii in range(N):
-    e(+3+0*N+2*ii,+0+2*N+0*ii,1,1,1)
-    e(+2+0*N+0*ii,+1+2*N+2*ii,1,1,1)
-```
+### Paper (recommended)
 
-This generates the following graph representations of experimental setups
-
-```N=0```
-
-```
-[(3, 0, 2, 2, -1), (3, 0, 1, 2, 1), (3, 0, 1, 1, 1), (2, 3, 2, 1, 1), (1, 0, 1, 1, -1), (1, 2, 2, 1, -1)]
-```
-```N=1```
-```
-[(3, 0, 2, 2, -1), (4, 1, 1, 2, 1), (5, 0, 1, 1, 1), (4, 5, 2, 1, 1), (1, 2, 1, 1, -1), (1, 4, 2, 1, -1), (3, 2, 1, 1, 1), (2, 3, 1, 1, 1)]
-```
-```N=2```
-```
-[(3, 0, 2, 2, -1), (5, 2, 1, 2, 1), (7, 0, 1, 1, 1), (6, 7, 2, 1, 1), (1, 4, 1, 1, -1), (1, 6, 2, 1, -1), (3, 4, 1, 1, 1), (5, 4, 1, 1, 1), (2, 5, 1, 1, 1), (2, 7, 1, 1, 1)]
-```
-
-The experimental setups produce the following quantum states
-
-```N=0```:
-```
--1[aybyczdy]+1[azbzcydz]-1[azbzcydy]-1[aybzcydy]
-```
-
-```N=1```:
-```
-+1[azbycydzezfy]
-```
-
-```N=2```:
-```
-+1[azbycydzeyfygzhy]+1[azbyczdzeyfygzhy]+1[azbzcydzeyfygyhy]-1[aybzcydyeyfygyhy]-1[aybzczdyeyfygyhy]
-```
-
-
-
-### Generate Basic Structure of Codes
-The first two arguments of the ```add_edge(pos1,pos2,col1,col2,amp)``` function are the positions indices (```pos1``` and ```pos2```) of the vertices connected by the edge. These should be expressed by simple formulas.
-
-Here is the bare structure code for the example:
-
-
-```
-e(+3+0*N,+0+0*N)
-e(+3+1*N,+0+1*N)
-e(+3+2*N,+0+0*N)
-e(+2+2*N,+3+2*N)
-e(+1+0*N,+0+2*N)
-e(+1+0*N,+2+2*N)
-for ii in range(N):
-    e(+3+0*N+2*ii,+0+2*N+0*ii)
-    e(+2+0*N+0*ii,+1+2*N+2*ii)
-```
-
-There are various constraints that these formulas have to fulfill based on the topology of the resulting graphs:
-1. positions should not exceed size of respective graph, 0<=pos(ii,N)<=4+2*N for all ii in range(N) and N in range(3)
-2. no loops (```pos1!=pos2``` for all values)
-3. each node should have a degree (number of edges connected) higher than a specified minimum
-4. each edge should be part of a perfect matching
-
-These conditions are very rarely fulfilled for a random graph. It takes one CPU about 30 minutes of generating random codes and checking for these condition until a code satisfying these conditions is found. It was not feasible for us to generate >10^7 codes in this way, so we decided to generate only ~200k codes which satisfy the topological conditions and reuse each of them as a possible starting point to generate multiple full codes later.
-
-We begin by defining a list of possible formulas and filtering them according to 1.
-
-### ```data_main/valpos.py```
-```
-verts1 = ['0', '1', '2', '3']
-verts2 = ['0*N', '1*N', '2*N', '3*N']
-verts3 = ['0*ii', '1*ii', '2*ii', '3*ii']
-for all possible combinations of vert1+vert2+vert3:
-    check if formula is valid for all combinations of ii and N
-    if valid: save to file
-```
-
-We then use this list of valid position formulas to define a bare structure of a code (no color or amplitude argument) which can be used to compute the topology of the graphs and check conditions 2, 3, and 4.
-
-We generate these bare structure codes for all four possible combinations of ```[LONG,SHORT]``` and ```[DEG1,DEG2]```
-* ```LONG``` means that layer 0 can have between 4 and 12 lines and layer 1 can have between 2 and 12 lines
-* ```SHORT``` means that layer 0 can have between 4 and 8 lines and layer 1 can have between 2 and 6 lines
-* ```DEG1``` means that the resulting graphs for N=0,1,2 have to have a minimum degree of 1 for all nodes
-* ```DEG2``` means that the resulting graphs for N=0,1,2 have to have a minimum degree of 2 for all nodes
-
-
-### ```data_main/generate_topologies.py```
-```
-set length of code range [LONG, SHORT]
-set minimum degree [DEG1, DEG2]
-loop:
-    random pick number of lines in layer 0
-    random pick number of lines in layer 1
-    set minimum degree constraint for generated graphs [DEG1, DEG2]
-    random pick 2*num_lines_0 elements from valid positions for layer 0
-    random pick 2*num_lines_1 elements from valid positions for layer 1
-    check for no loops condition
-    check for degree condition
-    check for perfect matching condition
-    if all checks valid, save code
-```
-
-### Generate Full Codes
-We now load the bare structure codes generated in ```generate_topologies.py``` and add the arguments ```col1```,```col2```,```amp``` to produce the final code.
-
-There are additional conditions that each final code has to satisfy
-
-1. the generated states should not be zero
-2. the generated states should have less kets than a given maximum number
-
-From all four possible combinations of ```[LONG,SHORT]``` and ```[DEG1,DEG2]``` we take bare structure codes and generate final codes. For the final codes there are also the following property descriptors
-
-* ```DIMENSION```
-    * ```2D```: ```col1``` and ```col2``` can only be from ```[0,1]```
-    * ```3D```: ```col1``` and ```col2``` can only be from ```[0,1,2]```
-* ```EDGEWEIGHT```
-    *```WEIGHTED```: ```amp``` can be from ```[-1,1]```
-    *```UNWEIGHTED```: ```amp``` can only be ```1```
-* ```MAX_KETS```
-    * ```8-16-32```: the maximum number of terms (kets) in the resulting states for ```N=0,1,2``` are ```8,16,32```
-    * ```6-6-6```: the maximum number of terms (kets) in the resulting states for ```N=0,1,2``` are ```6,6,6```
-
-### ```generate_data.py```
-```
-pick from [LONG,SHORT]
-pick from [DEG1,DEG2]
-set DIMENSION, EDGEWEIGHT, MAX_KETS
-loop:
-    take bare structure code from saved file (according to choice from [LONG,SHORT] and [DEG1,DEG2])
-    pick random entries for col1, col2, amp on each line according to DIMENSION and EDGEWEIGHT
-    compute resulting states for N=0,1,2
-    check for conditions 1. and 2. according to MAX_KETS
-    if valid: save to file
-```
-
-### Shuffle data
-There are processes generating final codes for each combination (total 2**5=32) of the already introduced parameters
-* ```CODELEN```: ```['SHORT', 'LONG']```
-* ```DEGREE```: ```['DEG1', 'DEG2']```
-* ```DIMENSION```: ```['2D', '3D']```
-* ```EDGEWEIGHT```: ```['WEIGHTED', 'UNWEIGHTED']```
-* ```MAX_KETS```: ```['8-16-32', '6-6-6']```
-
-During training we want to pick from a uniform distribution of all generated codes. The following scripts combine all the generated data, shuffle them and split them into evenly distributed files.
-
-### ```combinedata.py```
-Each type of sample potentially has multiple h5 files because there are multiple processes generating samples.
-```
-loop through all directories of possible combinations
-    combine all h5 files into one combined.h5 per directory
-```
-
-### ```combinedata2.py```
-We now want to combine files of different sample types into joint files.
-
-```
-set DATA_SPLIT = 100
-for ii in range(DATA_SPLIT):
-    loop through all directories:
-        copy slice ii/DATA_SPLIT of combined.h5
-        append to split_data_{ii}.h5
-```
-
-### ```shuffledata.py```
-We now have 100 files with roughly the same number of different sample types, but we still need to shuffle them
-
-```
-loop through all split_data_{ii}.h5:
-    shuffle file and save as shuffled_data_{ii}.h5
-```
-
-## Training
-### ```train.py```
-```
-initialize dataloader, model, and optimizer
-loop:
-    load batches on parallel GPUs and compute gradients (data parallelism)
-    (optional: accumulate gradients over multiple steps)
-    average gradients and update parameter
-    every eval_interval steps: evaluate loss and generate/evaluate three predictions
-```
-
-
-## Sampling
-### ```sample.py```
-
-```
-select target state class
-(optional: compute target states from formula)
-tokenize states for N=0,1,2
-load model checkpoint
-loop:
-    top-p sampling on tokenized input
-    decode prediction to string format (code)
-    compute setups corresponding to code and N=0,1,2
-    simulate setups
-    compute fidelities with respect to target states
-    save prediction and fidelities to file
-```
-
----
-
-## Citation
-
-If you use this repository in your work, please cite:
-```
-@article{arlt2024meta,
-  title={Meta-Designing Quantum Experiments with Language Models},
-  author={Arlt, S{\"o}ren and Duan, Haonan and Li, Felix and Xie, Sang Michael and Wu, Yuhuai and Krenn, Mario},
-  journal={arXiv preprint arXiv:2406.02470},
-  doi={https://doi.org/10.48550/arXiv.2406.02470},
-  year={2024}
+```bibtex
+@article{arlt2026metadesigning,
+  title   = {Meta-designing quantum experiments with language models},
+  author  = {Arlt, S{\"o}ren and Duan, Haonan and Li, Felix and Xie, Sang Michael and Wu, Yuhuai and Krenn, Mario},
+  journal = {Nature Machine Intelligence},
+  volume  = {8},
+  pages   = {148--157},
+  year    = {2026},
+  doi     = {10.1038/s42256-025-01153-0}
 }
 ```
 
-## Related links
-* zenodo: https://doi.org/10.5281/zenodo.14899993
-* arxiv: https://doi.org/10.48550/arXiv.2406.02470
+### Checkpoints + example training data (Zenodo)
+
+```bibtex
+@software{arlt2025_checkpoints_metadesign,
+  author    = {Arlt, S{\"o}ren},
+  title     = {Model checkpoints and example training data for {``Meta-designing quantum experiments with language models''}},
+  publisher = {Zenodo},
+  year      = {2025},
+  version   = {v1},
+  doi       = {10.5281/zenodo.14899993}
+}
+```
+
+### Code archive (Zenodo)
+
+```bibtex
+@software{arlt_krenn_2025_metadesign_code,
+  author    = {Arlt, S{\"o}ren and Krenn, Mario},
+  title     = {artificial-scientist-lab/metadesign: V1.0},
+  publisher = {Zenodo},
+  year      = {2025},
+  version   = {V1.0},
+  doi       = {10.5281/zenodo.17287889}
+}
+```
+
+---
 
 ## Acknowledgements
-* the structure of the code for the model and training is for the most part a modified version of nanoGPT https://github.com/karpathy/nanoGPT (our model is encoder-decoder instead of decoder-only)
+
+* The overall training code structure is largely adapted from nanoGPT: [https://github.com/karpathy/nanoGPT](https://github.com/karpathy/nanoGPT)
+  (This repo uses an **encoder–decoder** transformer rather than a decoder-only model.)
+
+---
+
+## Related links
+
+* Nature Machine Intelligence article: [https://www.nature.com/articles/s42256-025-01153-0](https://www.nature.com/articles/s42256-025-01153-0)
+* arXiv: [https://arxiv.org/abs/2406.02470](https://arxiv.org/abs/2406.02470)
+* Zenodo (code archive): [https://doi.org/10.5281/zenodo.17287889](https://doi.org/10.5281/zenodo.17287889)
+* Zenodo (checkpoints + example data): [https://doi.org/10.5281/zenodo.14899993](https://doi.org/10.5281/zenodo.14899993)
